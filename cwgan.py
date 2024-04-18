@@ -3,15 +3,15 @@ from torch import Tensor, nn
 from lightning import LightningModule
 
 
-class WGAN(LightningModule):
+class CWGAN(LightningModule):
     def __init__(
         self,
         generator: nn.Module,
         critic: nn.Module,
-        optimizer="Adam",
+        optimizer="RMSprop",
         lr=1e-5,
         critic_iter=5,
-        gradient_penalty: float | None = 10.0,
+        gradient_penalty: float | None = None,
         weight_clip: float | None = None,
         **kwargs,
     ):
@@ -25,10 +25,14 @@ class WGAN(LightningModule):
         return self.generator(y)
 
     def configure_optimizers(self):
-        optimizer_cls, kwargs = {
-            "rmsprop": (torch.optim.RMSprop, {"lr": self.hparams["lr"]}),
-            "adam": (torch.optim.Adam, {"lr": self.hparams["lr"], "betas": (0.5, 0.9)}),
-        }[self.hparams["optimizer"].lower()]
+        if self.hparams["optimizer"].lower() == "rmsprop":
+            optimizer_cls = torch.optim.RMSprop
+            kwargs: dict = dict(lr=self.hparams["lr"])
+        elif self.hparams["optimizer"].lower() == "adam":
+            optimizer_cls = torch.optim.Adam
+            kwargs: dict = dict(lr=self.hparams["lr"], betas=(0.0, 0.9), fused=True)
+        else:
+            raise ValueError(f"Unsupported optimizer: {self.hparams['optimizer']}")
 
         optimizer_for_generator = optimizer_cls(self.generator.parameters(), **kwargs)
         optimizer_for_critic = optimizer_cls(self.critic.parameters(), **kwargs)
@@ -66,20 +70,6 @@ class WGAN(LightningModule):
         self.optimize_critic(y, x_real, x_generated.detach())
         if batch_idx % self.hparams["critic_iter"] == 0:
             self.optimize_generator(y, x_real, x_generated)
-
-    def validation_step(self, batch, batch_idx):
-        x_real, y = batch
-        x_gen = self.generator(y)
-        return {
-            "Generated": x_gen,
-            "Real": x_real,
-            "Conditioning": y,
-            "Scores/Real": self.critic(y, x_real),
-            "Scores/Generated": self.critic(y, x_gen),
-        }
-
-    def test_step(self, batch, batch_idx):
-        return self.validation_step(batch, batch_idx)
 
     def weight_clip(self, critic: nn.Module, clip_value: float = 0.01):
         """
