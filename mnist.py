@@ -52,8 +52,7 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        max_time="00:03:00:00",
-        gradient_clip_val=1.0,
+        max_time="00:01:30:00",
         devices="2,",
         callbacks=[
             custom_callbacks.WatchModel(),
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     model = VisionCWGAN(
         shape=fminst.dims,
         classes=fminst.num_classes,
-        noise_dim=32,
+        noise_dim=8,
         optimizer="adam",
         lr=1e-4,
         critic_iter=1,

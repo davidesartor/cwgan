@@ -47,8 +47,7 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        gradient_clip_val=1.0,
-        max_time="00:06:00:00",
+        max_time="00:03:00:00",
         devices="2,",
         callbacks=[
             custom_callbacks.WatchModel(),
