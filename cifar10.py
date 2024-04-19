@@ -63,7 +63,7 @@ if __name__ == "__main__":
         classes=fminst.num_classes,
         noise_dim=32,
         optimizer="adam",
-        lr=3e-4,
+        lr=1e-4,
         critic_iter=1,
         gradient_penalty=None,
         weight_clip=None,
