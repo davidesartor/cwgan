@@ -52,7 +52,7 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        max_time="00:06:00:00",
+        max_time="00:03:00:00",
         devices="2,",
         callbacks=[
             custom_callbacks.WatchModel(),
