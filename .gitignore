@@ -1,6 +1,7 @@
 **/__pycache__
 wandb/
 wgan/
+cifar-10-batches-py/
 FashionMNIST/
 config.yaml
 .bash

@@ -2,7 +2,7 @@ import torch
 from lightning import Trainer
 from lightning.pytorch import callbacks, loggers
 import custom_callbacks
-from pl_bolts.datamodules import FashionMNISTDataModule
+from pl_bolts.datamodules import CIFAR10DataModule
 from models.vision import Generator, Critic
 from cwgan import CWGAN
 
@@ -42,13 +42,8 @@ class VisionCWGAN(CWGAN):
 if __name__ == "__main__":
     torch.set_float32_matmul_precision("medium")
 
-    fminst = FashionMNISTDataModule(
-        ".",
-        batch_size=1000,
-        val_split=1000 / 60000,
-        num_workers=4,
-        pin_memory=True,
-        drop_last=True,
+    fminst = CIFAR10DataModule(
+        ".", batch_size=1000, val_split=1000 / 50000, num_workers=4, pin_memory=True
     )
 
     trainer = Trainer(
@@ -59,7 +54,7 @@ if __name__ == "__main__":
             callbacks.RichProgressBar(),
             callbacks.RichModelSummary(-1),
         ],
-        logger=loggers.WandbLogger(project="wgan", log_model=True, tags=["mnist"]),
+        logger=loggers.WandbLogger(project="wgan", log_model=True, tags=["cifar10"]),
     )
 
     model = VisionCWGAN(
@@ -67,7 +62,7 @@ if __name__ == "__main__":
         classes=fminst.num_classes,
         noise_dim=32,
         optimizer="adam",
-        lr=1e-5,
+        lr=3e-4,
         critic_iter=1,
         gradient_penalty=None,
         weight_clip=None,

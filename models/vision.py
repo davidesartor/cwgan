@@ -46,7 +46,9 @@ class Generator(nn.Module):
         out_kernel_size = tuple(1 + 2**stages - s for s in out_shape)
 
         self.upsample_modules = nn.ModuleList(
-            nn.ConvTranspose2d(hidden if i else 1, hidden, 4, stride=2, padding=1)
+            nn.ConvTranspose2d(
+                hidden if i else 1, hidden, kernel_size=4, stride=2, padding=1
+            )
             for i in range(stages)
         )
         self.inception_modules = nn.ModuleList(
@@ -88,12 +90,12 @@ class Critic(nn.Module):
         super().__init__()
         self.classes = classes
         self.activation = activation
-        out_channels, *out_shape = shape
-        stages = math.ceil(math.log2(max(out_shape)))
-        out_kernel_size = tuple(1 + 2**stages - s for s in out_shape)
+        in_channels, *in_shape = shape
+        stages = math.ceil(math.log2(max(in_shape)))
+        out_kernel_size = tuple(1 + 2**stages - s for s in in_shape)
 
         self.expand = nn.utils.spectral_norm(
-            nn.ConvTranspose2d(1, hidden, out_kernel_size)
+            nn.ConvTranspose2d(in_channels, hidden, out_kernel_size)
         )
         self.residual_blocks = nn.ModuleList(
             ResidualConvBlock(hidden, kernel_size, activation, spectral_norm=True)
@@ -104,7 +106,9 @@ class Critic(nn.Module):
             for _ in range(stages)
         )
         self.downsample_modules = nn.ModuleList(
-            nn.utils.spectral_norm(nn.Conv2d(hidden, hidden, kernel_size=2, stride=2))
+            nn.utils.spectral_norm(
+                nn.Conv2d(hidden, hidden, kernel_size=4, stride=2, padding=1)
+            )
             for _ in range(stages)
         )
         self.head = MLP(hidden, 1, hidden_dim=hidden * 4, spectral_norm=True)
