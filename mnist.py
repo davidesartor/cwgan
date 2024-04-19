@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     trainer = Trainer(
         max_time="00:03:00:00",
+        gradient_clip_val=1.0,
         devices="2,",
         callbacks=[
             custom_callbacks.WatchModel(),
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         classes=fminst.num_classes,
         noise_dim=32,
         optimizer="adam",
-        lr=3e-4,
+        lr=1e-4,
         critic_iter=1,
         gradient_penalty=None,
         weight_clip=None,
