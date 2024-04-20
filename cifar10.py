@@ -1,7 +1,8 @@
-import torch
 from lightning import Trainer
 from lightning.pytorch import callbacks, loggers
+import torch
 import custom_callbacks
+from setproctitle import setproctitle
 from pl_bolts.datamodules import CIFAR10DataModule
 from models.vision import Generator, Critic
 from cwgan import CWGAN
@@ -34,25 +35,31 @@ class VisionCWGAN(CWGAN):
                 columns=["Class", "Real", "Generated"],
                 data=[
                     [f"Class_{i}", real, gen]
-                    for i, real, gen in zip(classes, real_imgs, generated_imgs)
+                    for i, real, gen in zip(classes[:30], real_imgs, generated_imgs)
                 ],
             )
 
 
 if __name__ == "__main__":
+    setproctitle("𐎀𐎍𐎙 𐎊𐎟𐏐𐎢 𐭓𐭕𐭁 𐭆𐭖𐭈𐭌 𐭃𐭉𐭆𐭍𐭊 𐤀𐤋𐤊 𐤄𐤅𐤔𐤋𐤉𐤕")
     torch.set_float32_matmul_precision("medium")
 
+    batch_size = 512
     fminst = CIFAR10DataModule(
-        ".", batch_size=1000, val_split=1000 / 50000, num_workers=4, pin_memory=True
+        ".",
+        batch_size=batch_size,
+        val_split=(50000 - (50000 // batch_size) * batch_size + 1) / 50000,
+        num_workers=8,
+        pin_memory=True,
     )
 
     trainer = Trainer(
-        max_time="00:03:00:00",
+        max_time="00:08:00:00",
         devices="2,",
         callbacks=[
             custom_callbacks.WatchModel(),
             callbacks.RichProgressBar(),
-            callbacks.RichModelSummary(-1),
+            callbacks.RichModelSummary(),
         ],
         logger=loggers.WandbLogger(project="wgan", log_model=True, tags=["cifar10"]),
     )
@@ -61,9 +68,10 @@ if __name__ == "__main__":
         shape=fminst.dims,
         classes=fminst.num_classes,
         noise_dim=32,
+        hidden=64,
         optimizer="adam",
         lr=1e-4,
-        critic_iter=1,
+        critic_iter=2,
         gradient_penalty=None,
         weight_clip=None,
     )
