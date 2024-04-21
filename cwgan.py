@@ -91,7 +91,7 @@ class CWGAN(LightningModule):
         """
         factory_kwargs = {"device": x1.device, "dtype": x1.dtype}
         batch_size, *x_shape = x1.shape
-        ones = torch.ones(batch_size, **factory_kwargs)
+        ones = torch.ones(batch_size, 1, **factory_kwargs)
 
         # interpolate between the two examples
         a = torch.rand(batch_size, **factory_kwargs)

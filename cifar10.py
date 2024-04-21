@@ -41,10 +41,10 @@ class VisionCWGAN(CWGAN):
 
 
 if __name__ == "__main__":
-    setproctitle("𐎀𐎍𐎙 𐎊𐎟𐏐𐎢 𐭓𐭕𐭁 𐭆𐭖𐭈𐭌 𐭃𐭉𐭆𐭍𐭊 𐤀𐤋𐤊 𐤄𐤅𐤔𐤋𐤉𐤕")
+    setproctitle("sudo -pkill me with no worries, i'm just a test")
     torch.set_float32_matmul_precision("medium")
 
-    batch_size = 512
+    batch_size = 1024
     fminst = CIFAR10DataModule(
         ".",
         batch_size=batch_size,
@@ -67,11 +67,9 @@ if __name__ == "__main__":
     model = VisionCWGAN(
         shape=fminst.dims,
         classes=fminst.num_classes,
-        noise_dim=32,
-        hidden=64,
         optimizer="adam",
         lr=1e-4,
-        critic_iter=2,
+        critic_iter=4,
         gradient_penalty=None,
         weight_clip=None,
     )
