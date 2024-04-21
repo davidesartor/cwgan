@@ -1,7 +1,8 @@
-import torch
 from lightning import Trainer
 from lightning.pytorch import callbacks, loggers
+import torch
 import custom_callbacks
+from setproctitle import setproctitle
 from pl_bolts.datamodules import FashionMNISTDataModule
 from models.vision import Generator, Critic
 from cwgan import CWGAN
@@ -18,62 +19,58 @@ class VisionCWGAN(CWGAN):
 
     def validation_step(self, batch, batch_idx):
         classes = torch.arange(self.hparams["classes"], device=self.device)
-        generated_imgs = self.generator(
+        gen_imgs = self.generator(
             torch.arange(self.hparams["classes"], device=self.device)
         )
         if isinstance(self.logger, loggers.WandbLogger):
-            for i, img in enumerate(generated_imgs):
+            for i, img in enumerate(gen_imgs):
                 self.logger.log_image(f"Generated/Class_{i}", [img])
 
     def test_step(self, batch, batch_idx):
         real_imgs, classes = batch
-        generated_imgs = self.generator(classes)
+        gen_imgs = self.generator(classes)
         if isinstance(self.logger, loggers.WandbLogger):
-            self.logger.log_table(
-                "Generated vs Real",
-                columns=["Class", "Real", "Generated"],
-                data=[
-                    [f"Class_{i}", real, gen]
-                    for i, real, gen in zip(classes, real_imgs, generated_imgs)
-                ],
-            )
+            for i, (c, r, g) in list(enumerate(zip(classes, real_imgs, gen_imgs)))[:30]:
+                self.logger.log_image(
+                    f"Test/{i}", [r, g], caption=[f"Real", "Generated"]
+                )
 
 
 if __name__ == "__main__":
+    setproctitle("i'm just a test, feel free to sudo -pkill me UwU")
     torch.set_float32_matmul_precision("medium")
 
-    fminst = FashionMNISTDataModule(
+    batch_size = 1024
+    datamodule = FashionMNISTDataModule(
         ".",
-        batch_size=1000,
-        val_split=1000 / 60000,
-        num_workers=4,
+        batch_size=batch_size,
+        val_split=(60000 - (60000 // batch_size) * batch_size + 1) / 60000,
+        num_workers=8,
         pin_memory=True,
-        drop_last=True,
     )
 
     trainer = Trainer(
-        max_time="00:01:30:00",
-        devices="2,",
+        max_time="00:04:00:00",
+        devices="1,",
         callbacks=[
             custom_callbacks.WatchModel(),
             callbacks.RichProgressBar(),
-            callbacks.RichModelSummary(-1),
+            callbacks.RichModelSummary(),
         ],
         logger=loggers.WandbLogger(project="wgan", log_model=True, tags=["mnist"]),
     )
 
     model = VisionCWGAN(
-        shape=fminst.dims,
-        classes=fminst.num_classes,
-        noise_dim=8,
+        shape=datamodule.dims,
+        classes=datamodule.num_classes,
         optimizer="adam",
-        lr=1e-4,
-        critic_iter=1,
+        lr=1e-5,
+        critic_iter=4,
         gradient_penalty=None,
         weight_clip=None,
     )
 
-    fminst.prepare_data()
-    fminst.setup()
-    trainer.fit(model, fminst.train_dataloader(), fminst.val_dataloader())
-    trainer.test(model, dataloaders=fminst.test_dataloader())
+    datamodule.prepare_data()
+    datamodule.setup()
+    trainer.fit(model, datamodule.train_dataloader(), datamodule.val_dataloader())
+    trainer.test(model, dataloaders=datamodule.test_dataloader())

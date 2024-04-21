@@ -19,33 +19,29 @@ class VisionCWGAN(CWGAN):
 
     def validation_step(self, batch, batch_idx):
         classes = torch.arange(self.hparams["classes"], device=self.device)
-        generated_imgs = self.generator(
+        gen_imgs = self.generator(
             torch.arange(self.hparams["classes"], device=self.device)
         )
         if isinstance(self.logger, loggers.WandbLogger):
-            for i, img in enumerate(generated_imgs):
+            for i, img in enumerate(gen_imgs):
                 self.logger.log_image(f"Generated/Class_{i}", [img])
 
     def test_step(self, batch, batch_idx):
         real_imgs, classes = batch
-        generated_imgs = self.generator(classes)
+        gen_imgs = self.generator(classes)
         if isinstance(self.logger, loggers.WandbLogger):
-            self.logger.log_table(
-                "Generated vs Real",
-                columns=["Class", "Real", "Generated"],
-                data=[
-                    [f"Class_{i}", real, gen]
-                    for i, real, gen in zip(classes[:30], real_imgs, generated_imgs)
-                ],
-            )
+            for i, (c, r, g) in list(enumerate(zip(classes, real_imgs, gen_imgs)))[:30]:
+                self.logger.log_image(
+                    f"Test/{i}", [r, g], caption=[f"Real", "Generated"]
+                )
 
 
 if __name__ == "__main__":
-    setproctitle("sudo -pkill me with no worries, i'm just a test")
+    setproctitle("i'm just a test, feel free to sudo -pkill me UwU")
     torch.set_float32_matmul_precision("medium")
 
     batch_size = 1024
-    fminst = CIFAR10DataModule(
+    datamodule = CIFAR10DataModule(
         ".",
         batch_size=batch_size,
         val_split=(50000 - (50000 // batch_size) * batch_size + 1) / 50000,
@@ -54,7 +50,7 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        max_time="00:08:00:00",
+        max_time="00:24:00:00",
         devices="2,",
         callbacks=[
             custom_callbacks.WatchModel(),
@@ -65,16 +61,16 @@ if __name__ == "__main__":
     )
 
     model = VisionCWGAN(
-        shape=fminst.dims,
-        classes=fminst.num_classes,
+        shape=datamodule.dims,
+        classes=datamodule.num_classes,
         optimizer="adam",
-        lr=1e-4,
-        critic_iter=4,
+        lr=1e-5,
+        critic_iter=2,
         gradient_penalty=None,
         weight_clip=None,
     )
 
-    fminst.prepare_data()
-    fminst.setup()
-    trainer.fit(model, fminst.train_dataloader(), fminst.val_dataloader())
-    trainer.test(model, dataloaders=fminst.test_dataloader())
+    datamodule.prepare_data()
+    datamodule.setup()
+    trainer.fit(model, datamodule.train_dataloader(), datamodule.val_dataloader())
+    trainer.test(model, dataloaders=datamodule.test_dataloader())
