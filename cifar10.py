@@ -40,7 +40,7 @@ if __name__ == "__main__":
     setproctitle("i'm just a test, feel free to sudo -pkill me UwU")
     torch.set_float32_matmul_precision("medium")
 
-    batch_size = 1024
+    batch_size = 512
     datamodule = CIFAR10DataModule(
         ".",
         batch_size=batch_size,
@@ -65,7 +65,8 @@ if __name__ == "__main__":
         classes=datamodule.num_classes,
         optimizer="adam",
         lr=1e-5,
-        critic_iter=2,
+        noise_dim=8,
+        critic_iter=1,
         gradient_penalty=None,
         weight_clip=None,
     )

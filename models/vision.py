@@ -7,9 +7,9 @@ from .utils import MLP, CIN
 class ResidualConvBlock(nn.Sequential):
     def __init__(self, channels, activation=nn.SiLU(), spectral_norm=False):
         super().__init__()
-        conv1 = nn.Conv2d(channels, channels, 3, padding="same")
+        conv1 = nn.Conv2d(channels, channels, 5, padding="same")
         norm = nn.InstanceNorm2d(channels)
-        conv2 = nn.Conv2d(channels, channels, 3, padding="same")
+        conv2 = nn.Conv2d(channels, channels, 5, padding="same")
         if spectral_norm:
             conv1 = nn.utils.spectral_norm(conv1)
             conv2 = nn.utils.spectral_norm(conv2)
