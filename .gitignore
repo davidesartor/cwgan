@@ -1,7 +1,8 @@
 **/__pycache__
 wandb/
 wgan/
-cifar-10-batches-py/
-FashionMNIST/
+datasets/
 config.yaml
 .bash
+.env
+.vscode/

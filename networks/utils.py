@@ -17,8 +17,9 @@ class MLP(nn.Sequential):
         num_layers=1,
         activation=nn.SiLU(),
         spectral_norm=False,
+        **kwargs,
     ):
-        layers = []
+        layers: list[nn.Module] = [nn.Flatten()]
         layer_dims = [input_dim] + [hidden_dim] * num_layers + [output_dim]
         for in_dim, out_dim in zip(layer_dims[:-1], layer_dims[1:]):
             layer = nn.Linear(in_dim, out_dim)
@@ -36,7 +37,7 @@ class CIN(nn.Module):
     https://arxiv.org/abs/1610.07629v5
     """
 
-    def __init__(self, channels, condition_dim, spectral_norm=False):
+    def __init__(self, channels, condition_dim, spectral_norm=False, **kwargs):
         super().__init__()
         self.mean = nn.Linear(condition_dim, channels)
         self.std = nn.Linear(condition_dim, channels)
@@ -44,7 +45,14 @@ class CIN(nn.Module):
             self.mean = nn.utils.spectral_norm(self.mean)
             self.std = nn.utils.spectral_norm(self.std)
 
-    def forward(self, x, y):
-        mean = self.mean(y).unsqueeze(-1).unsqueeze(-1)
-        std = self.std(y).unsqueeze(-1).unsqueeze(-1)
+    def forward(self, x, cond):
+        mean = self.mean(cond).unsqueeze(-1).unsqueeze(-1)
+        std = self.std(cond).unsqueeze(-1).unsqueeze(-1)
         return mean + std * nn.functional.instance_norm(x)
+
+
+class ConditionalSequential(nn.ModuleList):
+    def forward(self, x, cond):
+        for module in self:
+            x = module(x, cond)
+        return x

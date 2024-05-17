@@ -1,4 +1,5 @@
-from lightning.pytorch import callbacks
+from lightning.pytorch import callbacks, loggers
+import torch
 
 
 class WatchModel(callbacks.Callback):
