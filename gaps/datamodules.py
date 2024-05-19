@@ -24,9 +24,12 @@ class SinusoidsDataset(Dataset):
 
     @staticmethod
     def sample_params():
-        A = 10 ** np.random.normal(0.5, 0.25)
-        omega = 2 * np.pi * 10 ** np.random.normal(0.5, 0.25)
-        phi = np.random.normal(0, 0.5 * np.pi)
+        # A = 10 ** np.random.normal(0.5, 0.25)
+        # omega = 2 * np.pi * 10 ** np.random.normal(0.5, 0.25)
+        # phi = np.random.normal(0, 0.5 * np.pi)
+        A = 10 ** np.random.uniform(0, 1)
+        omega = 2 * np.pi * 10 ** np.random.uniform(0, 1)
+        phi = np.random.uniform(0, 2 * np.pi)
         params = np.array([A, omega, phi])
         return torch.as_tensor(params, dtype=torch.float32)
 
