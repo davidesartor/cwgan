@@ -1,59 +1,36 @@
-import math
 import torch
 import torch.nn as nn
 from lightning.pytorch import loggers
-from networks.utils import MLP
+from networks.timeseries import MambaSignalVectorEncoder
 from cwgan import CWGAN
 
 
-class Generator(nn.Module):
-    def __init__(
-        self, signal_shape, params_size, encoded_size=128, latent_size=32, **kwargs
-    ):
-        super().__init__()
-        self.latent_size = latent_size
-        self.mlp = MLP(
-            input_dim=math.prod(signal_shape),
-            output_dim=encoded_size,
-            num_layers=2,
-            spectral_norm=False,
-        )
-        self.out_proj = MLP(
-            input_dim=latent_size + encoded_size,
-            output_dim=params_size,
-            num_layers=2,
-            spectral_norm=False,
+class Generator(MambaSignalVectorEncoder):
+    def __init__(self, signal_shape, params_size, z_dim=32, **kwargs):
+        self.z_dim = z_dim
+        super().__init__(
+            signal_shape=signal_shape,
+            vector_size=z_dim,
+            encoded_size=params_size,
         )
 
-    def forward(self, signal):
-        z = torch.randn(signal.size(0), self.latent_size, device=signal.device)
-        x = self.mlp(signal)
-        x = torch.cat([x, z], dim=-1)
-        x = self.out_proj(x)
-        return x
+    def sample_z(self, signal):
+        z = torch.randn(signal.size(0), self.z_dim, device=signal.device)
+        return z
+
+    def forward(self, signal, z=None):
+        if z is None:
+            z = self.sample_z(signal)
+        return super().forward(signal, z)
 
 
-class Critic(nn.Module):
-    def __init__(self, signal_shape, params_size, encoded_size=128, **kwargs):
-        super().__init__()
-        self.mlp = MLP(
-            input_dim=math.prod(signal_shape),
-            output_dim=encoded_size,
-            num_layers=2,
-            spectral_norm=True,
+class Critic(MambaSignalVectorEncoder):
+    def __init__(self, signal_shape, params_size, **kwargs):
+        super().__init__(
+            signal_shape=signal_shape,
+            vector_size=params_size,
+            encoded_size=1,
         )
-        self.out_proj = MLP(
-            input_dim=params_size + encoded_size,
-            output_dim=1,
-            num_layers=2,
-            spectral_norm=True,
-        )
-
-    def forward(self, signal, params):
-        x = self.mlp(signal)
-        x = torch.cat([x, params], dim=-1)
-        x = self.out_proj(x)
-        return x
 
 
 class SinCWGAN(CWGAN):
@@ -68,8 +45,11 @@ class SinCWGAN(CWGAN):
         params_real, signal = batch
         params_generated = self.generator(signal)
 
+        scores_real = self.critic(signal, params_real)
+        scores_generated = self.critic(signal, params_generated)
+
         if isinstance(self.logger, loggers.WandbLogger):
-            log_dict = {
+            params_log_dict = {
                 f"{prefix}/{name}": d
                 for prefix, data in (
                     ("Real", params_real),
@@ -78,4 +58,13 @@ class SinCWGAN(CWGAN):
                 )
                 for name, d in zip(self.parameter_names, data.T)
             }
-            self.logger.experiment.log(log_dict)
+
+            scores_log_dict = {
+                "Score/Real": scores_real,
+                "Score/Generated": scores_generated,
+            }
+
+            self.logger.experiment.log({**params_log_dict, **scores_log_dict})
+
+    def test_step(self, batch, batch_idx):
+        self.validation_step(batch, batch_idx)

@@ -15,11 +15,14 @@ class MLP(nn.Sequential):
         output_dim,
         hidden_dim=512,
         num_layers=1,
+        preflatten=False,
         activation=nn.SiLU(),
         spectral_norm=False,
         **kwargs,
     ):
-        layers: list[nn.Module] = [nn.Flatten()]
+        layers = []
+        if preflatten:
+            layers.append(nn.Flatten())
         layer_dims = [input_dim] + [hidden_dim] * num_layers + [output_dim]
         for in_dim, out_dim in zip(layer_dims[:-1], layer_dims[1:]):
             layer = nn.Linear(in_dim, out_dim)

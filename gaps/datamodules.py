@@ -11,30 +11,36 @@ class SinusoidsDataset(Dataset):
 
     def __init__(self, batch_size, n_batches=1):
         self.dataset_size = batch_size * n_batches
-        self.times = np.linspace(0, 1, self.signal_lenght)
+        self.times = torch.linspace(0, 1, self.signal_lenght)
 
     def __len__(self):
         return self.dataset_size
 
-    def sample_params(self):
-        A = 10 ** np.random.uniform(-1, 1)
-        omega = 2 * np.pi * 10 ** np.random.uniform(0, 0.5)
-        phi = np.random.uniform(0, np.pi)
-        return A, omega, phi
-
-    def simulate_signal(self, A, omega, phi):
-        h1 = A * np.sin(omega * self.times + phi)
-        h2 = A * np.cos(omega * self.times + phi)
-        clean_signal = np.stack([h1, h2], axis=-1)
-        noise = np.random.normal(0, 1, clean_signal.shape)
-        return clean_signal + noise
-
     def __getitem__(self, idx):
         params = self.sample_params()
-        signal = self.simulate_signal(*params)
-        params = torch.as_tensor(params, dtype=torch.float32)
-        signal = torch.as_tensor(signal, dtype=torch.float32)
-        return params, signal
+        clean_signal = self.clean_signal(params, self.times)
+        noisy_signal = self.add_noise(clean_signal)
+        return params, noisy_signal
+
+    @staticmethod
+    def sample_params():
+        A = 10 ** np.random.normal(0.5, 0.25)
+        omega = 2 * np.pi * 10 ** np.random.normal(0.5, 0.25)
+        phi = np.random.normal(0, 0.5 * np.pi)
+        params = np.array([A, omega, phi])
+        return torch.as_tensor(params, dtype=torch.float32)
+
+    @staticmethod
+    def clean_signal(params: torch.Tensor, times: torch.Tensor):
+        A, omega, phi = params.tensor_split(3, dim=-1)
+        h1 = A * torch.sin(omega * times + phi)
+        h2 = A * torch.cos(omega * times + phi)
+        return torch.stack([h1, h2], dim=-1)
+
+    @staticmethod
+    def add_noise(clean_signal: torch.Tensor):
+        noise = torch.randn_like(clean_signal)
+        return clean_signal + noise
 
 
 class SinusoidsDatamodule(LightningDataModule):
