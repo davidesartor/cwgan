@@ -44,11 +44,15 @@ class SinusoidsDataset(Dataset):
 
 
 class SinusoidsDatamodule(LightningDataModule):
-    def __init__(self, batch_size=1024, num_workers=8, pin_memory=True, **kwargs):
+    def __init__(self, batch_size=128, num_workers=8, pin_memory=True, **kwargs):
         super().__init__()
         self.save_hyperparameters()
-        self.train_dataset = SinusoidsDataset(self.hparams["batch_size"], 128)
+        self.train_dataset = SinusoidsDataset(self.hparams["batch_size"], 1024)
         self.test_dataset = SinusoidsDataset(self.hparams["batch_size"])
+
+    def update_batch_size(self, batch_size):
+        self.hparams.update(batch_size=batch_size)
+        self.__init__(**self.hparams)
 
     @property
     def channel_names(self):

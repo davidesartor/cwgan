@@ -23,11 +23,11 @@ if __name__ == "__main__":
         datamodule_class=datamodules.SinusoidsDatamodule,
         save_config_kwargs=dict(overwrite=True),
         trainer_defaults=dict(
-            max_time="00:06:00:00",
+            max_time="00:02:00:00",
             devices="2,",
             callbacks=[
-                custom_callbacks.WatchModel(),
-                callbacks.ModelCheckpoint()
+                # custom_callbacks.WatchModel(),
+                callbacks.ModelCheckpoint(),
                 callbacks.RichProgressBar(),
                 callbacks.RichModelSummary(),
             ],
@@ -38,5 +38,7 @@ if __name__ == "__main__":
         ),
     )
 
-    parser.trainer.fit(parser.model, parser.datamodule)
+    for acc in range(6):
+        parser.datamodule.update_batch_size(2 * parser.datamodule.hparams["batch_size"])
+        parser.trainer.fit(parser.model, parser.datamodule)
     parser.trainer.test(parser.model, parser.datamodule)
