@@ -27,6 +27,7 @@ if __name__ == "__main__":
             devices="2,",
             callbacks=[
                 custom_callbacks.WatchModel(),
+                callbacks.ModelCheckpoint()
                 callbacks.RichProgressBar(),
                 callbacks.RichModelSummary(),
             ],

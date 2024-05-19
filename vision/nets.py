@@ -2,7 +2,7 @@ import math
 import torch
 from torch import nn
 from networks.utils import MLP, CIN, ConditionalSequential
-from networks.conv import ResidualBlock, UpSampleBlock, DownSampleBlock
+from networks.conv2d import ResidualBlock, UpSampleBlock, DownSampleBlock
 from cwgan import CWGAN
 
 
