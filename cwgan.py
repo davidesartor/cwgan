@@ -10,7 +10,8 @@ class CWGAN(LightningModule):
         critic: nn.Module,
         optimizer="RMSprop",
         lr=1e-5,
-        critic_iter=4,
+        critic_iter=5,
+        accumulate_grad_batches=1,
         gradient_penalty: float = 10,
         weight_clip: float | None = None,
         **kwargs,
@@ -38,7 +39,7 @@ class CWGAN(LightningModule):
         optimizer_for_critic = optimizer_cls(self.critic.parameters(), **kwargs)
         return [optimizer_for_generator, optimizer_for_critic], []
 
-    def optimize_critic(self, y, x_real, x_generated):
+    def critic_loss(self, y, x_real, x_generated):
         loss = self.critic(y, x_generated).mean() - self.critic(y, x_real).mean()
         self.log("Loss/Critic", loss, prog_bar=True)
 
@@ -46,31 +47,36 @@ class CWGAN(LightningModule):
             penalty = self.gradient_penalty(y, x_real, x_generated)
             loss += penalty
             self.log("Loss/Penalty", penalty, prog_bar=True)
+        return loss
 
-        optimizer_for_generator, optimizer = self.optimizers()  # type: ignore
-        optimizer.zero_grad()
-        self.manual_backward(loss)
-        optimizer.step()
-
-        if self.hparams["weight_clip"] is not None:
-            self.weight_clip(self.critic, self.hparams["weight_clip"])
-
-    def optimize_generator(self, y, x_real, x_generated):
+    def generator_loss(self, y, x_real, x_generated):
         loss = -self.critic(y, x_generated).mean()
         self.log("Loss/Generator", loss, prog_bar=True)
-
-        optimizer, optimizer_for_critic = self.optimizers()  # type: ignore
-        optimizer.zero_grad()
-        self.manual_backward(loss)
-        optimizer.step()
+        return loss
 
     def training_step(self, batch, batch_idx):
+        batch_idx_effective, batch_idx_relative = divmod(
+            batch_idx, self.hparams["accumulate_grad_batches"]
+        )
+
         x_real, y = batch
         x_generated = self.generator(y)
 
-        self.optimize_critic(y, x_real, x_generated.detach())
-        if batch_idx % self.hparams["critic_iter"] == 0:
-            self.optimize_generator(y, x_real, x_generated)
+        if batch_idx_effective % self.hparams["critic_iter"] == 0:
+            loss = self.generator_loss(y, x_real, x_generated)
+            optimizer, _ = self.optimizers()  # type: ignore
+        else:
+            loss = self.critic_loss(y, x_real, x_generated.detach())
+            _, optimizer = self.optimizers()  # type: ignore
+
+        if batch_idx_relative == 0:
+            optimizer.zero_grad()
+        self.manual_backward(loss / self.hparams["accumulate_grad_batches"])
+        if (batch_idx_relative + 1) % self.hparams["accumulate_grad_batches"] == 0:
+            optimizer.step()
+
+        if self.hparams["weight_clip"] is not None:
+            self.weight_clip(self.critic, self.hparams["weight_clip"])
 
     def weight_clip(self, critic: nn.Module, clip_value: float = 0.01):
         """

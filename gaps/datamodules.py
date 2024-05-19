@@ -47,7 +47,7 @@ class SinusoidsDataset(Dataset):
 
 
 class SinusoidsDatamodule(LightningDataModule):
-    def __init__(self, batch_size=128, num_workers=8, pin_memory=True, **kwargs):
+    def __init__(self, batch_size=256, num_workers=8, pin_memory=True, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.train_dataset = SinusoidsDataset(self.hparams["batch_size"], 1024)
