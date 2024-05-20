@@ -18,6 +18,5 @@ class GradientAccumulationScheduler(callbacks.GradientAccumulationScheduler):
             pass
 
     def on_train_epoch_start(self, trainer, pl_module):
-        pl_module.accumulate_grad_batches = self.get_accumulate_grad_batches(
-            trainer.current_epoch
-        )
+        scheduled_accumulate = self.get_accumulate_grad_batches(trainer.current_epoch)
+        pl_module.hparams.update(accumulate_grad_batches=scheduled_accumulate)

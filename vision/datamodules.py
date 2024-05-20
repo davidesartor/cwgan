@@ -16,7 +16,7 @@ class CIFAR10(CIFAR10DataModule, LightningDataModule):
 
 
 class FMNIST(FashionMNISTDataModule, LightningDataModule):
-    def __init__(self, data_dir="datasets/", batch_size=512, val_split=None, **kwargs):
+    def __init__(self, data_dir="datasets/", batch_size=256, val_split=None, **kwargs):
         if val_split is None:
             val_split = leave_one_batch(60000, batch_size)
         super().__init__(

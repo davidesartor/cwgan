@@ -24,7 +24,7 @@ if __name__ == "__main__":
         save_config_kwargs=dict(overwrite=True),
         trainer_defaults=dict(
             # max_time="00:00:30:00",
-            max_epochs=2048,
+            max_epochs=512,
             devices="2,",
             callbacks=[
                 callbacks.ModelCheckpoint(),
@@ -32,7 +32,7 @@ if __name__ == "__main__":
                 callbacks.RichModelSummary(),
                 custom_callbacks.WatchModel(),
                 custom_callbacks.GradientAccumulationScheduler(
-                    scheduling={512: 4, 1024: 16},
+                    scheduling={64: 2, 128: 4, 256: 16},
                 ),
             ],
             logger=dict(
