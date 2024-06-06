@@ -43,6 +43,8 @@ class MambaSignalVectorEncoder(nn.Sequential):
         encoded_size,
         hidden_dim=16,
         state_dim=16,
+        pool_factor=16,
+        expand_factor=2,
     ):
         super().__init__()
         time, channels = signal_shape
@@ -51,10 +53,10 @@ class MambaSignalVectorEncoder(nn.Sequential):
         channels = hidden_dim
 
         layers = []
-        while time > 8:
+        while time > pool_factor:
             layers.append(Mamba(channels, num_layers=1, state_dim=state_dim))
-            layers.append(DownSample(channels, pool=8, expand=2))
-            time, channels = time // 8, 2 * channels
+            layers.append(DownSample(channels, pool=pool_factor, expand=expand_factor))
+            time, channels = time // pool_factor, channels * expand_factor
         layers.append(Mamba(channels, num_layers=1, state_dim=state_dim))
         self.encoder = nn.Sequential(*layers)
 

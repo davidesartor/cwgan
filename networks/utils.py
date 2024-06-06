@@ -18,7 +18,6 @@ class MLP(nn.Sequential):
         preflatten=False,
         activation=nn.SiLU(),
         spectral_norm=False,
-        **kwargs,
     ):
         layers = []
         if preflatten:

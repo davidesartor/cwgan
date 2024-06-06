@@ -39,7 +39,9 @@ class CWGAN(LightningModule):
         optimizer_for_critic = optimizer_cls(self.critic.parameters(), **kwargs)
         return [optimizer_for_generator, optimizer_for_critic], []
 
-    def critic_loss(self, y, x_real, x_generated):
+    def critic_loss(self, batch):
+        x_real, y = batch
+        x_generated = self.generator(y).detach()
         loss = self.critic(y, x_generated).mean() - self.critic(y, x_real).mean()
         self.log("Loss/Critic", loss, prog_bar=True)
 
@@ -49,7 +51,9 @@ class CWGAN(LightningModule):
             self.log("Loss/Penalty", penalty, prog_bar=True)
         return loss
 
-    def generator_loss(self, y, x_real, x_generated):
+    def generator_loss(self, batch):
+        x_real, y = batch
+        x_generated = self.generator(y)
         loss = -self.critic(y, x_generated).mean()
         self.log("Loss/Generator", loss, prog_bar=True)
         return loss
@@ -59,18 +63,15 @@ class CWGAN(LightningModule):
             batch_idx, self.hparams["accumulate_grad_batches"]
         )
 
-        x_real, y = batch
-        x_generated = self.generator(y)
-
         if batch_idx_effective % self.hparams["critic_iter"] == 0:
-            loss = self.generator_loss(y, x_real, x_generated)
+            loss = self.generator_loss(batch)
             optimizer, _ = self.optimizers()  # type: ignore
         else:
-            loss = self.critic_loss(y, x_real, x_generated.detach())
+            loss = self.critic_loss(batch)
             _, optimizer = self.optimizers()  # type: ignore
 
         if batch_idx_relative == 0:
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
         self.manual_backward(loss / self.hparams["accumulate_grad_batches"])
         if (batch_idx_relative + 1) % self.hparams["accumulate_grad_batches"] == 0:
             optimizer.step()

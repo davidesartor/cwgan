@@ -28,11 +28,10 @@ if __name__ == "__main__":
             devices="2,",
             callbacks=[
                 callbacks.ModelCheckpoint(),
-                callbacks.RichProgressBar(),
-                callbacks.RichModelSummary(),
+                callbacks.RichModelSummary(max_depth=3),
                 custom_callbacks.WatchModel(),
                 custom_callbacks.GradientAccumulationScheduler(
-                    scheduling={64: 2, 128: 4, 256: 16},
+                    scheduling={32: 2, 64: 4, 128: 8, 256: 16},
                 ),
             ],
             logger=dict(

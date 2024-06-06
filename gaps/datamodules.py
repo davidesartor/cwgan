@@ -7,7 +7,7 @@ from lightning import LightningDataModule
 class SinusoidsDataset(Dataset):
     parameter_names = ["A", "ω", "φ"]
     channel_names = ["h+", "hx"]
-    signal_lenght = 1024
+    signal_lenght = 1024 * 16
 
     def __init__(self, batch_size, n_batches=1):
         self.dataset_size = batch_size * n_batches
@@ -24,9 +24,6 @@ class SinusoidsDataset(Dataset):
 
     @staticmethod
     def sample_params():
-        # A = 10 ** np.random.normal(0.5, 0.25)
-        # omega = 2 * np.pi * 10 ** np.random.normal(0.5, 0.25)
-        # phi = np.random.normal(0, 0.5 * np.pi)
         A = 10 ** np.random.uniform(0, 1)
         omega = 2 * np.pi * 10 ** np.random.uniform(0, 1)
         phi = np.random.uniform(0, 2 * np.pi)

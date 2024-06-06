@@ -1,4 +1,8 @@
-from pl_bolts.datamodules import CIFAR10DataModule, FashionMNISTDataModule
+from pl_bolts.datamodules import (
+    CIFAR10DataModule,
+    FashionMNISTDataModule,
+    MNISTDataModule,
+)
 from lightning import LightningDataModule
 
 
@@ -21,4 +25,13 @@ class FMNIST(FashionMNISTDataModule, LightningDataModule):
             val_split = leave_one_batch(60000, batch_size)
         super().__init__(
             data_dir=data_dir, val_split=val_split, batch_size=512, **kwargs
+        )
+
+
+class MNIST(MNISTDataModule, LightningDataModule):
+    def __init__(self, data_dir="datasets/", batch_size=256, val_split=None, **kwargs):
+        if val_split is None:
+            val_split = leave_one_batch(60000, batch_size)
+        super().__init__(
+            data_dir=data_dir, val_split=val_split, batch_size=batch_size, **kwargs
         )
